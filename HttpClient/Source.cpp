@@ -1,3 +1,6 @@
+﻿
+// Lab - 7
+
 #include <stdio.h>
 #include <winsock2.h>
 #include <iostream>
@@ -10,23 +13,25 @@
 #include <vector>
 #include <locale>
 #include <sstream>
+
 using namespace std;
+#pragma execution_character_set("utf-8")
 
 
 //Link with ws2_32.lib
 #pragma commnet (lib, "ws2_32.lib")
 #pragma warning( disable : 4996)
 
-#define BUFLEN 512
+#define BUFLEN UCHAR_MAX
 
 int main(int argc, char* argv[])
 {
-	std::ofstream MyFile;
+	SetConsoleOutputCP(65001);
 
+	std::ofstream MyFile;
 	std::string buff;
 	std::string url;
 	std::string hostname;
-
 
 	unsigned short  wVersionRequested;
 
@@ -42,7 +47,9 @@ int main(int argc, char* argv[])
 	in_addr** addr_list;
 
 
-	url = "www.google.bg";
+	cout << "URL: ";
+	cin >> url;
+	//url = "www.google.bg";
 	hostname = url.substr(url.find("www."), url.find("/", 8) - url.find("www."));
 
 	/*--------------WINSOCKET INITIALIZATION-------------*/
@@ -163,8 +170,8 @@ int main(int argc, char* argv[])
 	closesocket(sock);
 	WSACleanup();
 
-	//cout << "\n\nPress ANY key to close.\n\n";
-	//cin.ignore(); cin.get();
+	cout << "\n\nPress ANY key to close.\n\n";
+	cin.ignore(); cin.get();
 
 	return 0;
 }
@@ -185,7 +192,7 @@ int mainn(void) {
 	string website_HTML;
 
 	// website url
-	string url = "www.tspetrov.ga";
+	string url = "www.google.bg";
 
 	//HTTP GET
 	string get_http = "GET / HTTP/1.1\r\nHost: " + url + "\r\nConnection: close\r\n\r\n";
