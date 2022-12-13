@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <cctype>
+#include <iostream>
 
 #pragma warning(disable : 4996) //_CRT_SECURE_NO_WARNINGS
 
@@ -22,6 +23,7 @@ char Spelling[8];
 int Constant;
 const int MAXINTEGER = 1000000;
 
+char fileData[10000];
 int i = 0;
 bool errors = false;
 
@@ -41,16 +43,10 @@ void GetNextSymbol();
 //Scanner
 void GetNextChar()
 {
-	char* arr = readFile();
-	char dynamicBUff[500];
-	strcpy(dynamicBUff, arr);
-
-	if (dynamicBUff[i] != 32 && dynamicBUff[i] != 9 &&
-		dynamicBUff[i] != 13 && dynamicBUff[i] != 10 && dynamicBUff[i] != '\0')
-	{
-		printf("%c", dynamicBUff[i]);
-		Char = dynamicBUff[i];
-	}
+	Char = fileData[i];
+	printf("%c", Char);
+	if (Char == '.')
+		printf("\n");
 	i++;
 	return;
 }
@@ -60,7 +56,7 @@ void GetNextSymbol()
 	int digit = 0;
 	int k = 0;
 
-	while (Char == ' ')
+	while (Char == ' ' || Char == '\n')
 	{
 		GetNextChar();
 	}
@@ -167,14 +163,11 @@ int accept(TSymbol sym)
 int expect(TSymbol sym)
 {
 	if (accept(sym))
-	{
 		return 1;
-	}
-	else
-	{
-		errors = true;
-		perror(" <- expect: unexpected symbol");
-	}
+
+	errors = true;
+	perror(" <- expect: unexpected symbol");
+
 	return 0;
 }
 void Field()
@@ -204,13 +197,17 @@ void Record()
 	}
 	expect(period);
 }
+
+int records = 0;
 void DataFile(void)
 {
-	GetNextSymbol();
+	if(records == 0)
+		GetNextSymbol();
 	Record();
+	records++;
 	while ((Symbol == intconst) || (Symbol == quotas))
 	{
-		GetNextSymbol();
+		//GetNextSymbol();
 		Record();
 	}
 }
@@ -218,15 +215,15 @@ void DataFile(void)
 char* readFile()
 {
 	FILE* in = fopen("file.txt", "r");
-	char string[500] = "\n";
+	char string[5000] = "\n";
 	int i = 0;
 	while (1)
 	{
-		if (string[i] == EOF)
+		if (fileData[i] == EOF)
 		{
 			break;
 		}
-		fscanf(in, "%c", &string[i]);
+		fscanf(in, "%c", &fileData[i]);
 		i++;
 
 	}
@@ -236,6 +233,7 @@ char* readFile()
 
 int main()
 {
+	readFile();
 	GetNextChar();
 	DataFile();
 
