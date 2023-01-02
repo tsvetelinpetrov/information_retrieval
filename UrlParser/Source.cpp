@@ -1,362 +1,235 @@
-
 #include <iostream>
+#include <regex>
+#include <string>
+#include <vector>
 
-bool validSymbols(char ch)
-{
-    return (ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch == '-');
-}
-bool validDomain(std::string const& str, static int j)
-{
-    if (validSymbols(str.at(j)) && j < str.length() - 1)
-    {
-        return validDomain(str, j += 1);
-    }
-}
-bool isAlphabet(char ch)
-{
-    return (ch >= 'a' && ch <= 'z');
-}
-bool validTLD(std::string  str)
-{
-    if (isAlphabet(str.at(0)))
-    {
-        int size = str.substr(0, str.length()).length();
-        if (isAlphabet(str.at(str.length() - size--)))
-        {
-            str = str.substr(str.find(str.at(0)) + 1, str.length());
-            if (str == "")
-                return true;
-            return validTLD(str);
-        }
-    }
-    return false;
-}
-bool validPathSymbols(char ch)
-{
-    return (ch >= 'a' && ch <= 'z' || ch >= '@' && ch <= 'Z' || ch >= '0' && ch <= ';' || ch == '-' ||
-        ch >= '!' && ch <= '$' || ch >= '&' && ch <= '/' || ch == '\_' || ch == '\\');
-}
-bool validPath(std::string  str)
-{
-    if (validPathSymbols(str.at(0)))
-    {
-        int size = str.substr(0, str.length()).length();
-        if (validPathSymbols(str.at(str.length() - size--)))
-        {
-            str = str.substr(str.find(str.at(0)) + 1, str.length());
-            if (str == "")
-                return true;
-            return validPath(str);
-        }
-    }
-    return false;
-}
-bool isHostport(std::string domain);
-bool validAccount(std::string str)
-{
-    if (str.find(":") != std::string::npos)
-    {
-        int size = str.substr(0, str.find(':')).length();
+// Структура за съхранение на частите на URL
+struct URL {
+    std::string protocol;
+    std::string hostname;
+    std::string resource;
+    std::string username;
+    std::string password;
+};
 
-
-        if (validPathSymbols(str.at(str.length() - size--)))
-        {
-            str = str.substr(str.find(str.at(0)) + 1, str.length());
-            if (size == 0)
-            {
-                return validAccount(str.substr(str.find(":") + 1, str.length()));
-            }
-            return validAccount(str);
-        }
-    }
-    else
-    {
-        int size = str.substr(0, str.length()).length();
-        if (validPathSymbols(str.at(str.length() - size--)))
-        {
-            str = str.substr(str.find(str.at(0)) + 1, str.length());
-            if (str == "")
-                return true;
-            return validAccount(str);
-        }
-    }
-    return false;
-}
-bool validLogin(std::string str)
+void split(std::string str, std::string splitBy, std::vector<std::string>& tokens)
 {
-    if (str.find("@") != std::string::npos)
+    /* Store the original string in the array, so we can loop the rest
+     * of the algorithm. */
+    tokens.push_back(str);
+
+    // Store the split index in a 'size_t' (unsigned integer) type.
+    size_t splitAt;
+    // Store the size of what we're splicing out.
+    size_t splitLen = splitBy.size();
+    // Create a string for temporarily storing the fragment we're processing.
+    std::string frag;
+    // Loop infinitely - break is internal.
+    while (true)
     {
-        int size = str.substr(0, str.find('@')).length();
-        if (size == 0)
-            return false;
-        if (validPathSymbols(str.at(str.length() - size--)))
+        /* Store the last string in the vector, which is the only logical
+         * candidate for processing. */
+        frag = tokens.back();
+        /* The index where the split is. */
+        splitAt = frag.find(splitBy);
+        // If we didn't find a new split point...
+        if (splitAt == std::string::npos)
         {
-            str = str.substr(str.find(str.at(0)) + 1, str.length());
-            if (size == 0)
-            {
-                return validLogin(str.substr(str.find("@") + 1, str.length()));
-            }
-            return validLogin(str);
-        }
-    }
-    else
-    {
-        return isHostport(str);
-    }
-    return false;
-}
-bool validHex(char ch) {
-    return (ch >= 'a' && ch <= 'f' || ch >= 'A' && ch <= 'F' || ch >= '0' && ch <= '9');
-}
-bool isANumber(char ch)
-{
-    return (ch >= '0' && ch <= '9');
-}
-bool validMultipleHEX(std::string path)
-{
-    if (path.find("%") != std::string::npos)
-    {
-
-        int index1 = path.find("%") + 1;
-        int index2 = path.find("%") + 2;
-
-        if (index1 < path.length() && index2 < path.length())
-        {
-            if (validHex(path.at(index1)) && validHex(path.at(index2)))
-            {
-                path = path.substr(path.find("%") + 1, path.length());
-                return validMultipleHEX(path);
-            }
-            return false;
-        }
-        else
-        {
-            std::cout << "\nHex is Not Full: " << "\n";
-            return false;
-        }
-    }
-}
-
-bool isHostport(std::string domain)
-{
-    if (domain.find(".") != std::string::npos)
-    {
-        int size = domain.substr(0, domain.find(".")).length();
-        if (size > 3)
-            return false;
-        if (isANumber(domain.at(domain.find(".") - size--)))
-        {
-            domain = domain.substr(domain.find(domain.at(0)) + 1, domain.length());
-            if (size == 0)
-            {
-                return isHostport(domain.substr(domain.find(".") + 1, domain.length()));
-            }
-            return isHostport(domain);
-        }
-    }
-    else
-    {
-        int size = domain.substr(0, domain.length()).length();
-        if (size > 3)
-            return false;
-        if (isANumber(domain.at(domain.length() - size--)))
-        {
-            domain = domain.substr(domain.find(domain.at(0)) + 1, domain.length());
-            if (domain == "")
-                return true;
-            return isHostport(domain);
-        }
-    }
-    return false;
-}
-
-void pathCheck(std::string domain, std::string path)
-{
-    if (domain.find("/") == std::string::npos) // -1
-    {
-        return;
-    }
-
-    path = domain.substr(domain.find("/"), domain.length());
-    if (validPath(path))
-    {
-        std::cout << "Path !%: " << path << "\n" << "\n";
-        return;
-    }
-    if (validMultipleHEX(path))
-    {
-        std::cout << "Path %: " << path << "\n" << "\n";
-    }
-    else
-    {
-        std::cout << "\nHex is NOT VALID: " << "\n";
-    }
-}
-bool hostPortValidation(std::string hostport)
-{
-    int i = 0;
-    int occurrences = 0;
-    std::string::size_type pos = 0;
-    std::string target = ".";
-
-    while ((pos = hostport.find(target, pos)) != std::string::npos)
-    {
-        ++occurrences;
-        pos += target.length();
-        if (isdigit(hostport.at(i)))
-        {
-            if (occurrences > 1 && hostport.find(hostport.at(i), pos) && i < hostport.length() - 1)
-            {
-                return false;
-            }
-        }
-        i++;
-    }
-
-}
-void checkURL(std::string url)
-{
-    printf("Url: %s\n", url.c_str());
-    std::string path = "";
-    int i = 0;
-    static int j = 0;
-    std::string hostport = "";
-
-    while (1)
-    {
-        if (i == url.length())
-        {
+            // Break the loop and (implicitly) return.
             break;
         }
-        if (url.substr(0, 7) == "http://" ||
-            url.substr(0, 6) == "ftp://")
-        {
-            std::cout << "Protocol: " << url.substr(0, url.find('/') + 2) << "\n";
-            std::string domainToEnd = url.substr(url.find('/') + 2, std::string::npos);
-            std::string domainPlusTLD = domainToEnd.substr(0, domainToEnd.find("/"));
-
-            if (domainToEnd.find(":") != std::string::npos)
-                hostport = domainToEnd.substr(0, domainToEnd.find(":"));
-            else
-                hostport = domainToEnd.substr(0, domainToEnd.find("/"));
-
-            std::string domain = domainPlusTLD.substr(0, domainPlusTLD.find("."));
-
-
-            if (validDomain(domain, j) && domain.at(0) != '-' && domain.at(domain.length() - 1) != '-' && domain.length() >= 2 && domain.length() <= 63)
-            {
-                if (isHostport(hostport))
-                {
-                    std::cout << "\nHostport: " << hostport << "\n";
-                    if (domainToEnd.find(":") != std::string::npos)
-                    {
-                        std::string port = domainToEnd.substr(domainToEnd.find(":"), 3);
-                        if (domainToEnd.substr(domainToEnd.find(":"), 3) == ":80")
-                            std::cout << "\nPort - " << port << std::endl;
-                    }
-                    pathCheck(domainToEnd, path);
-                }
-                else if (domainPlusTLD.find(".") != std::string::npos && hostPortValidation(hostport))
-                {
-                    std::cout << "Domain: " << domain << std::endl;
-                    std::string tldWithPort = domainPlusTLD.substr(domainPlusTLD.find(".") + 1, domainPlusTLD.length() - 1);
-                    std::string tld = tldWithPort.substr(0, tldWithPort.find(":"));
-
-                    if (validTLD(tld))
-                    {
-                        if (domainToEnd.find(":") != std::string::npos)
-                        {
-                            std::string port = domainToEnd.substr(domainToEnd.find(":"), 3);
-                            if (domainToEnd.substr(domainToEnd.find(":"), 3) == ":80")
-                            {
-                                std::cout << "Tld: " << tld << std::endl;
-                                std::cout << "Port - " << port << std::endl;
-                            }
-                        }
-                        else
-                        {
-                            std::cout << "Tld: " << tld << std::endl;
-                        }
-                        pathCheck(domainToEnd, path);
-                    }
-                    else
-                    {
-                        std::cout << "\nTLD is not VALID\n";
-                    }
-                }
-                else
-                {
-                    std::cout << "\nDomain or Hostport is NOT VALID\n";
-                }
-            }
-            else if (domainPlusTLD.find("@") != std::string::npos)
-            {
-                std::string account = domainPlusTLD.substr(0, domainPlusTLD.find("@"));
-                if (validLogin(domainPlusTLD))
-                {
-                    std::cout << "\nLogin: " << domainPlusTLD << std::endl;
-
-                    if (validAccount(account) && domainPlusTLD.find(":") != std::string::npos)
-                    {
-                        std::cout << "\nAccount: " << account << std::endl;
-                        pathCheck(domainToEnd, path);
-                    }
-                    else
-                    {
-                        std::cout << "\nAccount or Hostport is NOT VALID\n";
-                    }
-                }
-                else
-                {
-                    std::cout << "\nAccount or Hostport is NOT VALID\n";
-                }
-            }
-            else
-            {
-                std::cout << "\nDomain is not found\n" << "\n";
-            }
-            break;
-        }
-        else
-        {
-            std::cout << "\nWrong protocol\n";
-        }
-        break;
-        i++;
+        /* Put everything from the left side of the split where the string
+         * being processed used to be. */
+        tokens.back() = frag.substr(0, splitAt);
+        /* Push everything from the right side of the split to the next empty
+         * index in the vector. */
+        tokens.push_back(frag.substr(splitAt + splitLen, frag.size() - (splitAt + splitLen)));
     }
 }
 
-int main()
-{
-    std::string noProto = "htp://do-ma-in.com/path%20%2d%3c%2f%4b.html";
-    std::string urlHttp = "http://do-ma-in.com/path%20%2d%3c%2f%4b.html";
-    std::string wrong = "http://do-ma-in.com/path%0%2d%3c%2f%4b.html";
-    std::string urlHttp1 = "http://do-main.com:80/path%2d%2d%2d%2d%2d.html";
-    std::string urlHttp3 = "http://127.30.0.1/path%2d%2d%2d%2d%2d.html";
-    std::string wrong2 = "http://127.1234.0.1:80/path%2d%2d%2d%2d%2d.html";
-    std::string withoutPath = "http://ascii-code.com";
+int isItIp(std::string str) {
+    std::vector<std::string> results;
+    split(str, ".", results);
 
-    std::string urlFtp = "ftp://user1!a:pass1w!ord@121.0.0.1/path";
-    std::string urlFtp1 = "ftp://user1!apass1w!ord@121.0.0.1/path";
-    std::string urlFtp2 = "ftp://user1!:apass1w!ord121.0.0.1/path";
+    bool inValid = false;
+    bool outOfRange = false;
 
-    checkURL(noProto);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(urlHttp);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(wrong);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(urlHttp1);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(urlHttp3);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(wrong2);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(withoutPath);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(urlFtp);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(urlFtp1);
-    std::cout << "--------------------------------------------------------------" << std::endl;
-    checkURL(urlFtp2);
+    if (results.size() < 4 || results.size() > 4)
+        inValid = true;
+
+    if(!inValid)
+        for (auto& i : results) {
+            std::string prefix = i.substr(0, i.find(":"));
+            bool isInt = std::regex_match(prefix, std::regex(("((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?")));
+            if (!isInt) {
+                inValid = true;
+                break;
+            } else {
+                int num = stoi(i);
+                if (num < 0 || num > 255)
+                    outOfRange = true;
+            }
+        }
+
+    if (inValid)
+        return 0;
+
+    if (outOfRange)
+        return 2;
+
+    return 1;
+}
+
+// Парсване на URL и връщане на неговите части
+URL parse_url(const std::string& url) {
+    URL result;
+
+    // Намиране на протокол
+    size_t protocol_end = url.find("://");
+    if (protocol_end != std::string::npos) {
+        result.protocol = url.substr(0, protocol_end);
+        // check me if protocol is not valid
+    } else {
+        // Не е специфициран протокол, задаваме HTTP
+        result.protocol = "http";
+    }
+
+    // Определяне на хостнейм и пътя на ресурса
+    size_t hostname_end = url.find('/', protocol_end + 3);
+    if (hostname_end != std::string::npos) {
+        result.hostname = url.substr(protocol_end + 3, hostname_end - (protocol_end + 3));
+        result.resource = url.substr(hostname_end);
+        if (isItIp(result.hostname) == 2) {
+            std::cout << "ERROR: THE HOSTNAME IP IS OUT OF RANGE\n";
+        }
+    } else {
+        result.hostname = url.substr(protocol_end + 3);
+        if (isItIp(result.hostname) == 2) {
+            std::cout << "ERROR: THE HOSTNAME IP IS OUT OF RANGE\n";
+        }
+        result.resource = "/";
+    }
+
+
+
+    // Валидиране на хостнейма
+    if (result.protocol != "ftp") {
+        std::regex ip_regex("^(\\d{1,3}\\.){3}\\d{1,3}$");
+        std::regex hostname_regex("^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])\\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\\-]*[A-Za-z0-9])[:80]*$");
+        if (!std::regex_match(result.hostname, hostname_regex)) {
+            try {
+                throw std::invalid_argument("[ERROR NAME] Invalid hostname");
+            } catch (const std::exception& e) {
+                std::cout << e.what() << "\n";
+            }
+        }
+    }
+
+    // Валидиране и декодиране на пътя на ресурса
+    std::string resource_path;
+    for (size_t i = 0; i < result.resource.size(); i++) {
+        char c = result.resource[i];
+        if (c == '%') {
+            if (i + 2 >= result.resource.size()) {
+                try {
+                    throw std::invalid_argument("[ERROR SIZE]Invalid URL encoding");
+                } catch (const std::exception& e) {
+                    std::cout << e.what() << "\n";
+                }
+                return result;
+            }
+
+            char hex_str[3] = { result.resource[i + 1], result.resource[i + 2], '\0' };
+            char* endptr;
+            long value = strtol(hex_str, &endptr, 16);
+            if (*endptr != '\0') {
+                try {
+                    throw std::invalid_argument("[ERROR END] Invalid URL encoding");
+                }
+                catch (const std::exception& e) {
+                    std::cout << e.what() << "\n";
+                }
+            }
+            resource_path += static_cast<char>(value);
+            i += 2;
+        }
+        else {
+            resource_path += c;
+        }
+    }
+    result.resource = resource_path;
+
+    // Екстрактване на данните за вход за FTP ако са предоставени
+    if (result.protocol == "ftp") {
+        size_t username_start = result.hostname.find('@');
+        if (username_start != std::string::npos) {
+            result.username = result.hostname.substr(0, username_start);
+            result.hostname = result.hostname.substr(username_start + 1);
+
+            size_t password_start = result.username.find(':');
+            if (password_start != std::string::npos) {
+                result.password = result.username.substr(password_start + 1);
+                result.username = result.username.substr(0, password_start);
+            } else {
+                try {
+                    throw std::invalid_argument("[ERROR FINDING] :");
+                } catch (const std::exception& e) {
+                    std::cout << e.what() << "\n";
+                }
+            }
+        }
+        else {
+            try {
+                throw std::invalid_argument("[ERROR FINDING] @");
+            } catch (const std::exception& e) {
+                std::cout << e.what() << "\n";
+            }
+        }
+    }
+
+    return result;
+}
+
+int main() {
+    std::string wrongIP = "http://127.1234.0.1:80/path%2d%2d%2d%2d%2d.html";
+
+    std::vector < std::string > vec1{
+         "https://www.example.com/path/to/resource",
+         "htp://do-ma-in.com/path%20%2d%3c%2f%4b.html",
+         "http://do-ma-in.com/path%20%2d%3c%2f%4b.html",
+         "http://do-ma-in.com/path%0%2d%3c%2f%4b.html",
+         "http://do-main.com:80/path%2d%2d%2d%2d%2d.html",
+         "http://127.30.0.1/path%2d%2d%2d%2d%2d.html",
+         "http://ascii-code.com",
+         "ftp://user1!a:pass1w!ord@121.0.0.1/path",
+         "ftp://user1!apass1w!ord@121.0.0.1/path",
+         "ftp://user1!:apass1w!ord121.0.0.1/path",
+         "ftp://user:password@ftp.example.com/path/to/resource",
+         "https://www.example.com/path/to/resource",
+         "http://127.1234.0.1:80/path%2d%2d%2d%2d%2d.html"
+    };
+
+    URL parsed_url;
+
+    int counter = 1;
+    for (auto& i : vec1) {
+        parsed_url = parse_url(i);
+
+        std::cout << "URL: (" << counter << ") | " << i << std::endl;
+        std::cout << "Protocol: " << parsed_url.protocol << std::endl;
+
+        if(parsed_url.username != "")
+            std::cout << "Username: " << parsed_url.username << std::endl;
+
+        if (parsed_url.password != "")
+            std::cout << "Password: " << parsed_url.password << std::endl;
+        std::cout << "Hostname: " << parsed_url.hostname << std::endl;
+        std::cout << "Resource: " << parsed_url.resource << std::endl << std::endl;
+
+        counter++;
+    }
+
+    //checkIpOnly(wrongIP);
+
+    return 0;
 }

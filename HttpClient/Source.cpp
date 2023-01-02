@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
 	cin >> url;
 	//url = "www.google.bg";
 	hostname = url.substr(url.find("www."), url.find("/", 8) - url.find("www."));
-
+	cout << "\nHostname: " << hostname << endl;
 	/*--------------WINSOCKET INITIALIZATION-------------*/
 
 	wVersionRequested = MAKEWORD(2, 2);
